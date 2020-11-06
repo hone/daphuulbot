@@ -1,9 +1,22 @@
-use daphuulbot::feed;
+use daphuulbot::{
+    commands::{self, general::*},
+    feed,
+};
 use serenity::{
     async_trait,
     client::{Client, Context, EventHandler},
-    framework::{standard::macros::group, StandardFramework},
-    model::{gateway::Ready, prelude::ChannelId},
+    framework::{
+        standard::{
+            help_commands,
+            macros::{group, help},
+            Args, CommandGroup, CommandResult, HelpOptions,
+        },
+        StandardFramework,
+    },
+    model::{
+        gateway::Ready,
+        prelude::{ChannelId, Message, UserId},
+    },
 };
 use std::{collections::HashSet, env};
 
@@ -17,6 +30,25 @@ impl EventHandler for Handler {
     }
 }
 
+#[help]
+#[individual_command_tip = "If you want more information about a specific command, just pass the command as argument."]
+#[lacking_role("hide")]
+#[max_levenshtein_distance(3)]
+async fn my_help(
+    context: &Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    groups: &[&'static CommandGroup],
+    owners: HashSet<UserId>,
+) -> CommandResult {
+    let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await;
+    Ok(())
+}
+
+#[group]
+#[commands(thread)]
+struct General;
 
 #[tokio::main]
 async fn main() {
@@ -29,8 +61,15 @@ async fn main() {
         .map(|str| Ok(ChannelId(str.parse::<u64>()?)))
         .collect::<anyhow::Result<HashSet<ChannelId>>>()
         .expect("Channel IDs must be u64s");
+    let thread_category = env::var("DISCORD_THREAD_CATEGORY")
+        .map(|id| ChannelId(id.parse::<u64>().expect("Category IDs must be u64s")))
+        .expect("Please set DISCORD_THREAD_CATEGORY");
 
-    let framework = StandardFramework::new().normal_message(feed::normal_message_hook);
+    let framework = StandardFramework::new()
+        .configure(|c| c.prefix("!"))
+        .normal_message(feed::normal_message_hook)
+        .help(&MY_HELP)
+        .group(&GENERAL_GROUP);
 
     let mut client = Client::builder(&token)
         .event_handler(Handler)
@@ -40,6 +79,7 @@ async fn main() {
     {
         let mut data = client.data.write().await;
         data.insert::<feed::PostableChannels>(postable_channels);
+        data.insert::<commands::general::ThreadCategory>(thread_category);
     }
 
     if let Err(err) = client.start().await {
