@@ -1,0 +1,4 @@
+FROM hone/daphuulbot-base
+
+COPY --chown=discord:discord ./target/x86_64-unknown-linux-musl/release/daphuulbot ./bin/
+CMD ["/workspace/bin/daphuulbot"]

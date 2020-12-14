@@ -5,7 +5,7 @@ use serenity::{
 };
 use std::{env, sync::Arc, thread};
 
-const SLEEP_TIME_MS: u64 = 60 * 5;
+const SLEEP_TIME_MS: u64 = 60 * 60;
 
 /// Determine if a channel should be archived
 fn should_archive(
@@ -50,13 +50,13 @@ async fn main() {
                 .iter_mut()
                 .filter(|channel| should_archive(channel, thread_category_id, threshold));
             for channel in archive_channels {
-                println!("Archiving Channel: {}", channel.name);
-
                 if let Err(err) = channel
                     .edit(&http, |c| c.category(archive_category_id))
                     .await
                 {
-                    eprintln!("Http error: {:?}", err);
+                    eprintln!("Http error for '{}': {:?}", channel.name, err);
+                } else {
+                    println!("Archiving Channel: {}", channel.name);
                 }
             }
         }
