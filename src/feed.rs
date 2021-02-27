@@ -9,6 +9,8 @@ use serenity::{
 };
 use std::collections::HashSet;
 
+mod kickstarter;
+
 pub struct PostableChannels;
 impl TypeMapKey for PostableChannels {
     type Value = HashSet<ChannelId>;
@@ -22,14 +24,34 @@ pub async fn normal_message_hook(ctx: &Context, msg: &Message) {
         .expect("Expected PostableChannels in TypeMap");
     if let Some((channel_id, link)) = scrape_message(&msg.content) {
         if postable_channels.get(&channel_id).is_some() {
-            channel_id
-                .send_message(&ctx.http, |m| {
-                    m.content(link);
+            if let Ok(info) = kickstarter::EmbedInfo::from_url(link).await {
+                channel_id
+                    .send_message(&ctx.http, |m| {
+                        m.content(link);
 
-                    m
-                })
-                .await
-                .unwrap();
+                        m.embed(|e| {
+                            e.title(info.title);
+                            e.description(info.description);
+                            e.url(info.url);
+                            e.image(info.image);
+
+                            e
+                        });
+
+                        m
+                    })
+                    .await
+                    .unwrap();
+            } else {
+                channel_id
+                    .send_message(&ctx.http, |m| {
+                        m.content(link);
+
+                        m
+                    })
+                    .await
+                    .unwrap();
+            }
         }
     }
 }
