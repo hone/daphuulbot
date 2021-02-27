@@ -220,6 +220,7 @@ name = "daphuulbot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "dotenv",
  "lazy_static",
  "linkify",

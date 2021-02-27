@@ -1,0 +1,5 @@
+FROM hone/daphuulbot-base
+
+COPY --chown=discord:discord ./target/x86_64-unknown-linux-musl/release/thread_cleaner ./bin/
+CMD ["/workspace/bin/thread_cleaner"]
+
