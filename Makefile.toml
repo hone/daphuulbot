@@ -1,0 +1,16 @@
+[tasks.release-build]
+command = "cargo"
+args = ["build", "--release", "--target", "x86_64-unknown-linux-musl", "--features", "vendored-openssl"]
+
+[tasks.strip]
+dependencies = ["release-build"]
+command = "strip"
+args = ["target/x86_64-unknown-linux-musl/release/daphuulbot"]
+
+[tasks.docker-build]
+dependencies = ["strip"]
+script_runner = "@shell"
+script = '''
+docker pull heroku/heroku:18
+docker build -t registry.heroku.com/daphuulbot/discord .
+'''
