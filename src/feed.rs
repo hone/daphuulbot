@@ -16,19 +16,27 @@ impl TypeMapKey for PostableChannels {
     type Value = HashSet<ChannelId>;
 }
 
+pub struct Emoji;
+impl TypeMapKey for Emoji {
+    type Value = serenity::model::guild::Emoji;
+}
+
 #[hook]
 pub async fn normal_message_hook(ctx: &Context, msg: &Message) {
     let data = ctx.data.read().await;
     let postable_channels = data
         .get::<PostableChannels>()
         .expect("Expected PostableChannels in TypeMap");
+    let emoji_yes = data.get::<Emoji>().expect("Expected EmojiId in TypeMap");
     if let Some((channel_id, link)) = scrape_message(&msg.content) {
         if postable_channels.get(&channel_id).is_some() {
-            if let Ok(info) = kickstarter::EmbedInfo::from_url(link).await {
-                channel_id
-                    .send_message(&ctx.http, |m| {
-                        m.content(link);
+            let info = kickstarter::EmbedInfo::from_url(link).await;
+            channel_id
+                .send_message(&ctx.http, |m| {
+                    m.content(link);
+                    m.reactions(vec![emoji_yes.clone()]);
 
+                    if let Ok(info) = info {
                         m.embed(|e| {
                             e.title(info.title);
                             e.description(info.description);
@@ -37,21 +45,12 @@ pub async fn normal_message_hook(ctx: &Context, msg: &Message) {
 
                             e
                         });
+                    }
 
-                        m
-                    })
-                    .await
-                    .unwrap();
-            } else {
-                channel_id
-                    .send_message(&ctx.http, |m| {
-                        m.content(link);
-
-                        m
-                    })
-                    .await
-                    .unwrap();
-            }
+                    m
+                })
+                .await
+                .unwrap();
         }
     }
 }

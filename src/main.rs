@@ -15,6 +15,7 @@ use serenity::{
     },
     model::{
         gateway::Ready,
+        id::EmojiId,
         prelude::{ChannelId, Message, UserId},
     },
 };
@@ -64,12 +65,25 @@ async fn main() {
     let thread_category = env::var("DISCORD_THREAD_CATEGORY")
         .map(|id| ChannelId(id.parse::<u64>().expect("Category IDs must be u64s")))
         .expect("Please set DISCORD_THREAD_CATEGORY");
+    let emoji_yes_id = env::var("EMOJI_YES")
+        .map(|id| EmojiId(id.parse::<u64>().expect("Emoji IDs must be u64s")))
+        .expect("Please set EMOJI_YES");
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("!"))
         .normal_message(feed::normal_message_hook)
         .help(&MY_HELP)
         .group(&GENERAL_GROUP);
+
+    let http = serenity::http::client::Http::new_with_token(&token);
+    let guild = serenity::model::id::GuildId(739994825964912714);
+    let emoji_yes = guild
+        .emojis(&http)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|emoji| emoji.id == emoji_yes_id)
+        .expect("Could not find EMOJI_YES in server emojis");
 
     let mut client = Client::builder(&token)
         .event_handler(Handler)
@@ -79,6 +93,7 @@ async fn main() {
     {
         let mut data = client.data.write().await;
         data.insert::<feed::PostableChannels>(postable_channels);
+        data.insert::<feed::Emoji>(emoji_yes);
         data.insert::<commands::general::ThreadCategory>(thread_category);
     }
 
