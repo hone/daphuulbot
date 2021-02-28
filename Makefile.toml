@@ -5,12 +5,26 @@ args = ["build", "--release", "--target", "x86_64-unknown-linux-musl", "--featur
 [tasks.strip]
 dependencies = ["release-build"]
 command = "strip"
-args = ["target/x86_64-unknown-linux-musl/release/daphuulbot"]
+args = ["target/x86_64-unknown-linux-musl/release/daphuulbot", "target/x86_64-unknown-linux-musl/release/thread_cleaner"]
 
-[tasks.docker-build]
-dependencies = ["strip"]
-script_runner = "@shell"
-script = '''
-docker pull heroku/heroku:18
-docker build -t registry.heroku.com/daphuulbot/discord .
-'''
+[tasks.docker-pull]
+command = "docker"
+args = ["pull", "heroku/heroku:18"]
+
+[tasks.docker-build-base]
+dependencies = ["docker-pull"]
+command = "docker"
+args = ["build", "-t", "hone/daphuulbot-base", "."]
+
+[tasks.docker-build-discord]
+dependencies = ["strip", "docker-build-base"]
+command = "docker"
+args = ["build", "-t", "registry.heroku.com/daphuulbot/discord", "-f", "Dockerfile.discord","."]
+
+[tasks.docker-build-thread-cleaner]
+dependencies = ["strip", "docker-build-base"]
+command = "docker"
+args = ["build", "-t", "registry.heroku.com/daphuulbot/thread_cleaner", "-f", "Dockerfile.thread_cleaner", "."]
+
+[tasks.build-all]
+dependencies = ["docker-build-discord", "docker-build-thread-cleaner"]
