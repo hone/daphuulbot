@@ -15,7 +15,7 @@ use serenity::{
     },
     model::{
         gateway::Ready,
-        id::EmojiId,
+        id::{EmojiId, GuildId},
         prelude::{ChannelId, Message, UserId},
     },
 };
@@ -56,6 +56,9 @@ async fn main() {
     dotenv::dotenv().ok();
 
     let token = env::var("DISCORD_TOKEN").expect("Please set DISCORD_TOKEN as an env var.");
+    let guild = env::var("GUILD")
+        .map(|id| GuildId(id.parse::<u64>().expect("Guild IDs must be u64s")))
+        .expect("Please set GUILD");
     let postable_channels = env::var("DISCORD_POSTABLE_CHANNELS")
         .expect("Please set allowed DISCORD_POSTABLE_CHANNELS")
         .split(",")
@@ -76,11 +79,11 @@ async fn main() {
         .group(&GENERAL_GROUP);
 
     let http = serenity::http::client::Http::new_with_token(&token);
-    let guild = serenity::model::id::GuildId(739994825964912714);
-    let emoji_yes = guild
-        .emojis(&http)
-        .await
-        .unwrap()
+    let emojis = guild.emojis(&http).await.unwrap();
+    for emoji in emojis.iter() {
+        println!("{}", emoji);
+    }
+    let emoji_yes = emojis
         .into_iter()
         .find(|emoji| emoji.id == emoji_yes_id)
         .expect("Could not find EMOJI_YES in server emojis");
