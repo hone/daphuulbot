@@ -7,7 +7,8 @@ use select::{
 };
 use std::io::Cursor;
 
-static APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+// masquerade as curl so kickstarter doesn't think we're an automation tool
+static APP_USER_AGENT: &str = "curl/7.64.0";
 
 pub struct EmbedInfo {
     pub title: String,
