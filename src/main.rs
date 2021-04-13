@@ -56,9 +56,9 @@ async fn main() {
     dotenv::dotenv().ok();
 
     let token = env::var("DISCORD_TOKEN").expect("Please set DISCORD_TOKEN as an env var.");
-    let guild = env::var("GUILD")
+    let guild = env::var("DISCORD_GUILD")
         .map(|id| GuildId(id.parse::<u64>().expect("Guild IDs must be u64s")))
-        .expect("Please set GUILD");
+        .expect("Please set DISCORD_GUILD");
     let postable_channels = env::var("DISCORD_POSTABLE_CHANNELS")
         .expect("Please set allowed DISCORD_POSTABLE_CHANNELS")
         .split(",")
