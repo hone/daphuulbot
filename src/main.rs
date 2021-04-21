@@ -19,6 +19,7 @@ use serenity::{
         prelude::{ChannelId, Message, UserId},
     },
 };
+use sqlx::postgres::PgPoolOptions;
 use std::{collections::HashSet, env};
 
 /// EventHandler for signaling when the bot is connected and ready.
@@ -54,6 +55,12 @@ struct General;
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
+
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("Could not connect to the Postgres DB.");
 
     let token = env::var("DISCORD_TOKEN").expect("Please set DISCORD_TOKEN as an env var.");
     let guild = env::var("DISCORD_GUILD")
