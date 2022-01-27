@@ -8,6 +8,7 @@ use serenity::{
     prelude::TypeMapKey,
 };
 use std::collections::HashSet;
+use tracing::{error, info};
 
 mod kickstarter;
 
@@ -29,6 +30,8 @@ pub async fn normal_message_hook(ctx: &Context, msg: &Message) {
         .expect("Expected PostableChannels in TypeMap");
     let emoji_yes = data.get::<Emoji>().expect("Expected EmojiId in TypeMap");
     if let Some((channel_id, link)) = scrape_message(&msg.content) {
+        info!("Posting {link} to {channel_id}");
+
         if postable_channels.get(&channel_id).is_some() {
             let info = kickstarter::EmbedInfo::from_url(link).await;
             channel_id
@@ -36,15 +39,24 @@ pub async fn normal_message_hook(ctx: &Context, msg: &Message) {
                     m.content(link);
                     m.reactions(vec![emoji_yes.clone()]);
 
-                    if let Ok(info) = info {
-                        m.embed(|e| {
-                            e.title(info.title);
-                            e.description(info.description);
-                            e.url(info.url);
-                            e.image(info.image);
+                    match info {
+                        Ok(info) => {
+                            m.embed(|e| {
+                                e.title(info.title);
+                                e.description(info.description);
+                                e.url(info.url);
+                                e.image(info.image);
 
-                            e
-                        });
+                                e
+                            });
+                        }
+                        Err(err) => match err {
+                            kickstarter::EmbedInfoError::NotKickstarter => {}
+                            kickstarter::EmbedInfoError::EmptyDoc => {
+                                error!("Could not scrape {link}")
+                            }
+                            _ => error!("{:?}", err),
+                        },
                     }
 
                     m

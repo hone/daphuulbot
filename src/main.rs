@@ -8,7 +8,7 @@ use serenity::{
     framework::{
         standard::{
             help_commands,
-            macros::{group, help},
+            macros::{group, help, hook},
             Args, CommandGroup, CommandResult, HelpOptions,
         },
         StandardFramework,
@@ -20,6 +20,7 @@ use serenity::{
     },
 };
 use std::{collections::HashSet, env};
+use tracing::{error, info, instrument};
 
 /// EventHandler for signaling when the bot is connected and ready.
 struct Handler;
@@ -27,7 +28,7 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        info!("{} is connected!", ready.user.name);
     }
 }
 
@@ -47,13 +48,24 @@ async fn my_help(
     Ok(())
 }
 
+#[hook]
+#[instrument]
+async fn before(_ctx: &Context, _msg: &Message, command_name: &str) -> bool {
+    info!("Command: {command_name}");
+
+    true
+}
+
 #[group]
 #[commands(thread)]
 struct General;
 
 #[tokio::main]
+#[instrument]
 async fn main() {
     dotenv::dotenv().ok();
+
+    tracing_subscriber::fmt::init();
 
     let token = env::var("DISCORD_TOKEN").expect("Please set DISCORD_TOKEN as an env var.");
     let guild = env::var("DISCORD_GUILD")
@@ -74,6 +86,7 @@ async fn main() {
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("!"))
+        .before(before)
         .normal_message(feed::normal_message_hook)
         .help(&MY_HELP)
         .group(&GENERAL_GROUP);
@@ -81,7 +94,7 @@ async fn main() {
     let http = serenity::http::client::Http::new_with_token(&token);
     let emojis = guild.emojis(&http).await.unwrap();
     for emoji in emojis.iter() {
-        println!("{}", emoji);
+        info!("Emoji: {emoji}");
     }
     let emoji_yes = emojis
         .into_iter()
@@ -101,6 +114,6 @@ async fn main() {
     }
 
     if let Err(err) = client.start().await {
-        eprintln!("Client error: {:?}", err);
+        error!("Client error: {:?}", err);
     }
 }

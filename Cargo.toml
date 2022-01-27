@@ -16,7 +16,11 @@ regex = "1"
 reqwest = { version = "0.11", features = ["json"] }
 select = "0.5"
 serenity = "0.10"
+thiserror = "1.0"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
 openssl-sys = "*"
 

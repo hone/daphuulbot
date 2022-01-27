@@ -8,6 +8,7 @@ use serenity::{
     prelude::TypeMapKey,
     utils::MessageBuilder,
 };
+use tracing::info;
 
 pub struct ThreadCategory;
 impl TypeMapKey for ThreadCategory {
@@ -25,6 +26,8 @@ pub async fn thread(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
     let thread_category = data
         .get::<ThreadCategory>()
         .expect("Expected ThreadCategory in TypeMap");
+
+    info!("Creating thread {name}");
 
     let guild = match msg.guild(&ctx.cache).await {
         Some(g) => g,
